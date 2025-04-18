@@ -1,0 +1,2 @@
+sanic
+websockets==14.1
