@@ -1,12 +1,10 @@
-# React + Vite
+# basic-publicchat-app:
+ 
+basic-publicchat-app, or known as "Project Lumera" is an in-progress real-time chat application built with <a href='https://sanic.dev/api/sanic.app.html#getting-started'>Sanic<a> and <a href='https://websockets.readthedocs.io/en/stable/index.html'>WebSockets<a>. Designed for speed and efficiency, this project aims to provide a simple yet robust platform for instant messaging and communication.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# Key Dependencies:
+Sanic: A fast, asynchronous Python web framework that powers the backend. </br>
+WebSockets: Enabling real-time, bidirectional communication between the server and clients.
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript and enable type-aware lint rules. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+# Purpose:
+Lumera was created to build up my experience with WebSockets and backend development. This project is my hands-on approach to focusing on real-time communication and server-side programming. I wanted a challenge that would push me beyond the basics, diving deep into the complexities of building a scalable, efficient backend. Lumera is my journey into understanding how to manage WebSocket connections, optimize performance, and tackle the advanced aspects of backend architecture. It’s a personal project that’s all about learning, experimenting, and sharing with others the things I create.
