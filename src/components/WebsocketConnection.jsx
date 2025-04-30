@@ -1,53 +1,49 @@
-var client_name = prompt("Username:");
-var client_id = Date.now();
-
-const client_json_data = {
-  username: client_name,
-  id: client_id,
-};
-
-fetch("http://localhost:8000/get_users", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify(client_json_data),
-});
+export let clientName;
 
 export const initializeWebSocket = (url, onUserCountUpdate, onMessage, onConnectionStatus) => {
-  const websocket = new WebSocket(url);
+  if (!clientName) {
+    clientName = prompt("Enter your username:");
+  }
+  const clientInfo = { username: clientName, id: Date.now() };
 
-  websocket.onopen = () => {
-    console.log("Connected to WebSocket server");
-    if (onConnectionStatus) onConnectionStatus(true);
-  };
+  fetch("http://localhost:8000/get_users", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(clientInfo),
+  });
 
-  websocket.onmessage = (event) => {
-    console.log("Message received:", event.data);
+  const ws = new WebSocket(url);
 
-    if (event.data.startsWith("USERS_UPDATE:")) {
-      const count = parseInt(event.data.split(":")[1].trim(), 10);
-      if (onUserCountUpdate) onUserCountUpdate(count);
-    } 
+  ws.onopen = () => onConnectionStatus(true);
 
-    else if (event.data.startsWith("MESSAGE_HISTORY:")) {
-      const history = JSON.parse(event.data.split(":")[1].trim());
-      history.forEach((msg) => {
-        if (onMessage) onMessage(msg);
-      });
-    } 
+  ws.onmessage = ({ data }) => {
+    if (data.startsWith("USERS_UPDATE:")) {
+      const count = parseInt(data.split(":")[1].trim(), 10);
+      onUserCountUpdate(count);
 
-    else {
-      if (onMessage) onMessage(event.data);
+    } else if (data.startsWith("MESSAGE_HISTORY:")) {
+      const jsonStr = data.slice("MESSAGE_HISTORY:".length);
+      try {
+        const history = JSON.parse(jsonStr);
+        history.forEach(msg => onMessage(msg));
+      } catch (e) {
+        console.error("Failed to parse message history", e);
+      }
+
+    } else {
+      try {
+        const parsed = JSON.parse(data);
+        if (parsed.username && parsed.message) {
+          onMessage(parsed);
+          return;
+        }
+      } catch {}
+      onMessage(data);
     }
   };
 
-  websocket.onclose = () => {
-    console.log("WebSocket connection closed");
-    if (onConnectionStatus) onConnectionStatus(false);
-  };
+  ws.onclose = () => onConnectionStatus(false);
+  ws.onerror = err => console.error("WebSocket error", err);
 
-  websocket.onerror = (error) => {
-    console.error("WebSocket error:", error);
-  };
-
-  return websocket;
+  return ws;
 };
