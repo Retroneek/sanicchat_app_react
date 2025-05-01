@@ -1,66 +1,109 @@
-import React, { useEffect, useState, useRef } from "react";
-import './App.css';
-import { initializeWebSocket, clientName } from "./components/WebsocketConnection";
+import React, { useState, useEffect, useRef } from "react";
+import "./App.css";
+import { initializeWebSocket } from "./components/WebsocketConnection";
 
-const App = () => {
-  const [usersConnected, setUsersConnected] = useState(0);
+function App() {
+  const [stage, setStage] = useState("login");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [token, setToken]       = useState(localStorage.getItem("token"));
+  const [ws, setWs]             = useState(null);
+  const [onlineCount, setOnlineCount] = useState(0);
   const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
-  const [ws, setWs] = useState(null);
-  const [isConnected, setIsConnected] = useState(false);
-  const messagesEndRef = useRef(null);
+  const [input, setInput]       = useState("");
+  const [connected, setConnected] = useState(false);
+  const bottomRef = useRef(null);
+
+  const doAuth = async (path) => {
+    const res  = await fetch(`http://localhost:8000/${path}`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (data.success) {
+      localStorage.setItem("token", data.token);
+      setToken(data.token);
+      setStage("chat");
+    } else {
+      alert(data.error);
+    }
+  };
 
   useEffect(() => {
-    const websocket = initializeWebSocket(
-      "ws://localhost:8000/ws",
-      count => setUsersConnected(count),
-      message => setMessages(prev => [...prev, message]),
-      status => setIsConnected(status)
-    );
-    setWs(websocket);
-    return () => websocket.close();
-  }, []);
+    if (stage === "chat") {
+      const socket = initializeWebSocket(
+        "ws://localhost:8000/ws",
+        setOnlineCount,
+        msg => setMessages(ms => [...ms, msg]),
+        setConnected
+      );
+      setWs(socket);
+    }
+  }, [stage]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const sendMessage = () => {
-    if (input.trim() && isConnected) {
-      const payload = JSON.stringify({ username: clientName, message: input });
-      ws.send(payload);
+    if (input.trim() && connected) {
+      ws.send(JSON.stringify({ message: input }));
       setInput("");
     }
   };
 
+  if (stage === "login") {
+    return (
+      <div className="login-container">
+        <h2>Login / Register</h2>
+        <input
+          placeholder="Username"
+          value={username}
+          onChange={e => setUsername(e.target.value)}
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+        />
+        <div className="btn-group">
+          <button onClick={() => doAuth("login")}>Login</button>
+          <button onClick={() => doAuth("register")}>Register</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="App">
       <header>
-        <h1>Lumera</h1>
-        <p>Status: {isConnected ? "Connected" : "Disconnected"}</p>
-        <p>Users connected: {usersConnected}</p>
+        <h1>Lumera Chat</h1>
+        <p>Users online: {onlineCount}</p>
       </header>
+
       <div className="messages-container">
-        <ul>
-          {messages.map((msg, i) => (
-            <li key={i}>{typeof msg === 'object' ? `${msg.username}: ${msg.message}` : msg}</li>
-          ))}
-          <div ref={messagesEndRef} />
-        </ul>
+        {messages.map((m,i) => (
+          <div key={i} className="message">
+            <strong>{m.username}:</strong> {m.message}
+          </div>
+        ))}
+        <div ref={bottomRef} />
       </div>
+
       <div className="input-area">
         <input
-          type="text"
           value={input}
           onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') sendMessage(); }}
-          placeholder="Type a message and press Enter"
-          disabled={!isConnected}
+          onKeyDown={e => e.key === "Enter" && sendMessage()}
+          placeholder="Type a message..."
+          disabled={!connected}
         />
-        <button onClick={sendMessage} disabled={!isConnected}>Send</button>
+        <button onClick={sendMessage} disabled={!connected}>Send</button>
       </div>
     </div>
   );
-};
+}
 
 export default App;
